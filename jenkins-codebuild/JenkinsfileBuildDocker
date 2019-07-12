@@ -1,0 +1,73 @@
+def API_BRANCH = params.API_BRANCH ?: "develop"
+def UI_BRANCH = params.UI_BRANCH ?: "develop"
+
+//pipeline variables
+def version = null
+def uiCommitHash
+def apiCommitHash
+
+def cloudFormationReleaseParameter = "UIReleaseParameterName"
+
+node {
+    stage('Checkout') {
+        dir('angular-app') {
+            checkout scm: [
+                    $class           : 'GitSCM',
+                    branches         : [[name: params.UI_BRANCH]],
+                    userRemoteConfigs: [
+                            [
+                                    url          : "https://github.com/my-repo/angular-app.git",
+                                    credentialsId: 'someID'
+                            ]
+                    ]
+            ]
+        }
+        dir('java-ms') {
+            checkout scm: [
+                    $class           : 'GitSCM',
+                    branches         : [[name: params.API_BRANCH]],
+                    userRemoteConfigs: [
+                            [
+                                    url          : "https://github.com/my-repo/java-ms.git",
+                                    credentialsId: 'someID'
+                            ]
+                    ]
+            ]
+        }
+        sh 'ls -la'
+
+        // in order to get an unambiguous version number we use both commit hashes of the API and UI
+        dir('angular-app') {
+            uiCommitHash = sh(script: 'git log -1 --pretty=format:"%h"', returnStdout: true).trim()
+        }
+
+        dir('java-ms') {
+            apiCommitHash = sh(script: 'git log -1 --pretty=format:"%h"', returnStdout: true).trim()
+            version = "api-$API_BRANCH-$apiCommitHash-ui-$UI_BRANCH-$uiCommitHash".replaceAll("/", "-")
+            echo "version: ${version}"
+        }
+    }
+
+    stage("Code build") {
+        withAWS(role: 'my-aws-role', roleAccount: 'XXXX') {
+            awsCodeBuild projectName: 'code-build-project',
+                    credentialsType: 'keys',
+                    region: 'eu-central-1',
+                    sourceControlType: 'project',
+                    sourceVersion: apiCommitHash,
+                    secondarySourcesVersionOverride: "[{\"sourceIdentifier\": \"angular-app\", \"sourceVersion\": \"${uiCommitHash}\"}]",
+                    envVariables: "[{IMAGE_VERSION, ${version}}]"
+
+        }
+    }
+
+    stage("Result") {
+        echo 'Branch ui:  ' + UI_BRANCH
+        echo 'Branch api:  ' + API_BRANCH
+        echo 'Built version ' + version
+        echo 'CFN Stack Parameters for deployment: ' + cloudFormationReleaseParameter + "=" + version
+
+        currentBuild.displayName = "#" + currentBuild.number + ": Built and published - " + cloudFormationReleaseParameter
+        currentBuild.description = "Branch names: ui-" + UI_BRANCH + " - api-" + API_BRANCH + "\nCopy deployment stack params from end of build log"
+    }
+}

@@ -1,0 +1,40 @@
+pipeline {
+    agent any
+    stages {
+        stage('Code Build') {
+            steps {
+                script {
+                    //get commitID for codebuild
+                    def commitId = sh(returnStdout: true, script: 'git rev-parse HEAD')
+                    withAWS(role: 'my-aws-build-role', roleAccount: 'XXX') {
+
+                        def codeBuild = awsCodeBuild projectName: 'my-codebuild-project',
+                                credentialsType: 'keys',
+                                region: 'eu-central-1',
+                                sourceControlType: 'project',
+                                sourceVersion: commitId
+
+
+
+                        //copy test results for jenkins display
+                        def bucketName = "codebuild-generated-artifacts"
+                        def codeBuildId = codeBuild.getBuildId().replace('my-sample-artifact:','')
+                        def artifactPath = "${bucketName}/${codeBuildId}"
+
+                        echo "copying artifacts from artifactPath: ${artifactPath}"
+                        sh "aws s3 cp s3://${artifactPath} target --recursive"
+
+                        echo "removing s3 folder s3://${bucketName}/${codeBuildId}"
+                        sh "aws s3 rm --recursive s3://${bucketName}/${codeBuildId}"
+                    }
+                }
+            }
+            post {
+                always {
+                    junit '**/surefire-reports/**/*.xml'
+                    sh 'rm -rf target'
+                }
+            }
+        }
+    }
+}

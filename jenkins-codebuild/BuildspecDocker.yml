@@ -1,0 +1,60 @@
+version: 0.2
+
+env:
+  variables:
+    IMAGE_REPO_NAME: "my-repo-name"
+    AWS_DEFAULT_REGION: "eu-central-1"
+  parameter-store:
+    NEXUS_LOGIN: "code-build-nexus-login"
+    NEXUS_PW: "code-build-nexus-password"
+    DEV_ACCOUNT_ID: "code-build-dev-env-id"
+    QA_ACCOUNT_ID: "code-build-qa-env-id"
+    PROD_ACCOUNT_ID: "code-build-prod-env-id"
+phases:
+  install:
+    runtime-versions:
+      java: openjdk8
+      nodejs: 10
+  pre_build:
+    commands:
+      - echo "[info] getting settings xml"
+      - cd ..
+      - aws s3api get-object --bucket s3-config-bucket --key settings.xml settings.xml
+      - echo "[info] got settings xml"
+      - echo "[info] logging into ecr"
+      - $(aws ecr get-login --no-include-email --region ${AWS_DEFAULT_REGION} --registry-ids ${DEV_ACCOUNT_ID})
+      - $(aws ecr get-login --no-include-email --region ${AWS_DEFAULT_REGION} --registry-ids ${QA_ACCOUNT_ID})
+      - $(aws ecr get-login --no-include-email --region ${AWS_DEFAULT_REGION} --registry-ids ${PROD_ACCOUNT_ID})
+      - echo "[info] successful logged in"
+      - chmod a+x java-ms/push_image_to_registry.sh
+  build:
+    commands:
+      - echo "[info] building npm"
+      - cd angular-app
+      - npm install
+      - npm run lint
+      - npm run test
+      - npm run build
+      - cp -a build/. ../java-ms/src/main/resources/static/
+      - echo "[info] angular built done"
+      - echo "[info] building java-ms"
+      - cd ../java-ms
+      - mvn -B -s ../settings.xml clean install -Dnexus.robot.login=$NEXUS_LOGIN -Dnexus.robot.pw=$NEXUS_PW
+      - echo "[info] java-ms built successfully"
+      - echo "[info] preparing docker build"
+      - cd ..
+      - mkdir -p java-ms/src/main/docker
+      - mv java-ms/target/*.jar java-ms/src/main/docker/java-ms.jar
+      - echo "[info] building docker image"
+      - docker build -t $IMAGE_REPO_NAME:$IMAGE_VERSION java-ms/src/main/docker
+      - echo "[info] building docker done"
+      - java-ms/push_image_to_registry.sh $IMAGE_REPO_NAME $IMAGE_VERSION $DEV_ACCOUNT_ID $AWS_DEFAULT_REGION
+      - echo "[info] Pushing image to QA"
+      - java-ms/push_image_to_registry.sh $IMAGE_REPO_NAME $IMAGE_VERSION $QA_ACCOUNT_ID $AWS_DEFAULT_REGION
+      - echo "[info] Pushing image to PROD"
+      - java-ms/push_image_to_registry.sh $IMAGE_REPO_NAME $IMAGE_VERSION $PROD_ACCOUNT_ID $AWS_DEFAULT_REGION
+
+cache:
+  paths:
+    - '/root/.m2/**/*'
+    - '**/node_modules/**/*'

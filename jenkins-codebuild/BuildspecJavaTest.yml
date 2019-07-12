@@ -1,0 +1,30 @@
+version: 0.2
+
+env:
+  parameter-store:
+    SONAR_LOGIN: "code-build-sonar-login"
+    SONAR_PASSWORD: "code-build-sonar-password"
+    SONAR_URL: "code-build-sonar-url"
+    NEXUS_LOGIN: "code-build-nexus-login"
+    NEXUS_PW: "code-build-nexus-password"
+phases:
+  pre_build:
+    commands:
+      - echo "[info] getting settings xml"
+      - cd ..
+      - aws s3api get-object --bucket my-config-bucket --key settings.xml settings.xml
+      - echo "[info] got settings xml"
+  build:
+    commands:
+      - echo "[info] building artifact"
+      - cd my-sample-artifact
+      - mvn -B -s ../settings.xml clean package -Dnexus.robot.login=$NEXUS_LOGIN -Dnexus.robot.pw=$NEXUS_PW -Dmaven.test.failure.ignore=true -Pgenerate-coverage sonar:sonar -Dsonar.login=$SONAR_LOGIN -Dsonar.password=$SONAR_PASSWORD -Dsonar.host.url=$SONAR_URL -Dsonar.projectName=my-sampe-artifact
+      - echo "[info] artifact built"
+
+artifacts:
+  files:
+    - '**/surefire-reports/**/*.xml'
+
+cache:
+  paths:
+    - '/root/.m2/**/*'
