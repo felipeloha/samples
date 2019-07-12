@@ -1,19 +1,19 @@
-#Jenkins job runtime improvement with aws codebuild projects
+# Jenkins job runtime improvement with aws codebuild projects #
 
-##Preconditions:
+## Preconditions ##
 * Jenkins is setup in aws and we did not manage to use slaves. 
 * Since the platform is big and some artifacts (Java) 
 contain many others, jenkins comes to his limits when multiple developers commit to different repositories and it is forced to run multiple jobs at the same time. 
 * The job that verifies the maven multiproject runs around 35 min.
 
-##Goal:
+## Goal ##
 * Stay with jenkins
 * Run jobs in codebuild and get feedback in jenkins to improve the performance
 
-##Solutions:
+## Solutions ##
 Jenkinsfiles and buildspecs are in this ordner
 
-###Following steps were done to build big artifacts (maven multiproject) outside of jenkins
+### Following steps were done to build big artifacts (maven multiproject) outside of jenkins ###
 * Install jenkins codebuild plugin
 * Create jenkins pipeline
 * Store settings.xml for maven build in s3
@@ -33,7 +33,7 @@ Jenkinsfiles and buildspecs are in this ordner
 With this approach we managed to reduce the runtime to 5 mins.
 
 
-###Build and push docker image from angular app and java ms to different aws accounts
+### Build and push docker image from angular app and java ms to different aws accounts ###
 We next challenge we had was to build and angular application on top of a java microservice, create a docker image and push it to different environments. This jobs was running around 25 mins in jenkins.
 
 We did the following steps to build the docker images outside of jenkins:
