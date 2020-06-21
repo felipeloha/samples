@@ -8,7 +8,7 @@ So here is my own guide for the next one trying to get the security groups in pl
 What we want to achieve is connecting quicksight to an RDS instance in a VPC without giving it public access.
 
 ### Preconditions
-So we need a user with enough permissions to modifiy quicksight, rds and security groups.
+So we need a user with enough permissions to modify quicksight, rds and security groups.
 
 ### Overview Network
 The diagram shows what we want to achieve:
@@ -32,7 +32,7 @@ These are the steps to achieve:
 
 5. Go to quicksights and create a VPC connection with the ID SG-1 and any subnet group which is used by your RDS instance See: (https://docs.aws.amazon.com/quicksight/latest/user/vpc-creating-a-connection-in-quicksight.html)
 
-6. After this you can check that a network interface was created with SG-1 allowing the desited incoming and outgoing traffic 
+6. After this you can check that a network interface was created with SG-1 allowing the desired incoming and outgoing traffic 
 
 7. Go to quicksights > data source and use the created VPC connection to reach your RDS instance
 
