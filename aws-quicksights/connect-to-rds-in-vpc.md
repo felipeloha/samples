@@ -2,7 +2,7 @@
 
 I had a lot of trouble trying to connect AWS quicksight with an RDS following this guide: https://docs.aws.amazon.com/quicksight/latest/user/enabling-access-rds.html
 
-So here is my own guide for the next one trying to get the security groups in place. I still reccomend to read the guide as I will not explain some basics here.
+So here is my own guide for the next one trying to get the security groups in place. I still reccommend to read the guide as I will not explain some basics here.
 
 ### Goal
 What we want to achieve is connecting quicksight to an RDS instance in a VPC without giving it public access.
