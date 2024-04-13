@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>System design load calculator</title>
+</head>
+<body>
+<div>
+    <h1>Latency</h1>
+    <table>
+        <tr>
+            <td><label for="activeUsers">Number of active users:</label></td>
+            <td><input type="number" id="activeUsers" onkeydown="toMills('activeUsers', 'activeUsersInMills')"></td>
+            <td><p id="activeUsersInMills"></p></td>
+        </tr>
+        <tr>
+            <td><label for="requestsDay">Number of requests per day:</label></td>
+            <td><input type="number" id="requestsDay" onkeydown="toMills('requestsDay', 'requestsInMills')"></td>
+            <td><p id="requestsInMills"></p></td>
+        </tr>
+        <tr>
+            <td><label for="bitsPerRequest">Bits per request:</label></td>
+            <td><input type="number" id="bitsPerRequest"></td>
+        </tr>
+        <tr>
+            <td><button onclick="requestsPerSecond()">Calculate requests per second in mb</button></td>
+            <td><p id="output"></p></td>
+        </tr>
+    </table>
+
+
+    <h1>Data</h1>
+    <table>
+        <tr>
+            <td><label for="users">Number of users:</label></td>
+            <td><input type="number" id="users" onkeydown="toMills('users', 'usersInMills')"></td>
+            <td><p id="usersInMills"></p></td>
+        </tr>
+        <tr>
+            <td><label for="bitsPerUser">Bits per Entity:</label></td>
+            <td><input type="number" id="bitsPerUser"></td>
+        </tr>
+        <tr>
+            <td><button onclick="usersPerYear()">Calculate users per year</button></td>
+            <td><p id="usersPerYear"></p></td>
+        </tr>
+        <tr>
+            <td><label for="requestsDay">Number of entities per day:</label></td>
+            <td><input type="number" id="entitiesDay" onkeydown="toMills('entitiesDay', 'entitiesInMills')"></td>
+            <td><p id="entitiesInMills"></p></td>
+        </tr>
+        <tr>
+            <td><label for="bitsPerRequest">Bits per Entity:</label></td>
+            <td><input type="number" id="bitsPerEntity"></td>
+        </tr>
+        <tr>
+            <td><button onclick="entitiesPerYear()">Calculate entities per year</button></td>
+            <td><p id="dataOutput"></p></td>
+        </tr>
+    </table>
+</div>
+<script>
+    function toBillions(field1, field2) {
+        let fieldValue = document.getElementById(field1).value;
+        let fieldValueInBillions = fieldValue / 1000000000;
+        document.getElementById(field2).innerHTML = fieldValueInBillions + " billion";
+    }
+    function toMills(field1, field2) {
+        let fieldValue = document.getElementById(field1).value;
+        let fieldValueInMills = fieldValue / 1000000;
+        document.getElementById(field2).innerHTML = fieldValueInMills + " million";
+    }
+    function bytesToMb(bytes) {
+        return bytes / 1024 / 1024;
+    }
+
+    function bitsToBytes(bits) {
+        return bits / 8;
+    }
+
+    //bytes to GB
+    function bytesToGb(bytes) {
+        return bytes / 1024 / 1024 / 1024;
+    }
+
+    function requestsPerSecond() {
+        let requestsDay = document.getElementById("requestsDay").value;
+        let bitsPerRequest = document.getElementById("bitsPerRequest").value;
+        let bytesPerRequest = bitsToBytes(bitsPerRequest);
+        let bytesPerDay = requestsDay * bytesPerRequest;
+        //calculate bytes per second
+        let bytesPerSecond = bytesPerDay / 86400;
+        //convert to mb
+        let mbPerSecond = bytesToMb(bytesPerSecond).toFixed(2);
+
+        //write to output
+        document.getElementById("output").innerHTML = mbPerSecond + " mb per second";
+    }
+
+    function entitiesPerYear(){
+        let entitiesDay = document.getElementById("entitiesDay").value;
+        let bitsPerEntity = document.getElementById("bitsPerEntity").value;
+        let bytesPerEntity = bitsToBytes(bitsPerEntity);
+        let bytesPerDay = entitiesDay * bytesPerEntity;
+        let bytesPerYear = bytesPerDay * 365;
+        let mbPerYear = bytesToGb(bytesPerYear).toFixed(2);
+        document.getElementById("dataOutput").innerHTML = mbPerYear + " GB per year";
+    }
+
+    function usersPerYear(){
+        let users = document.getElementById("users").value;
+        let bitsPerUser = document.getElementById("bitsPerUser").value;
+        let bytesPerUser = bitsToBytes(bitsPerUser);
+        let bytesPerDay = users * bytesPerUser;
+        let bytesPerYear = bytesPerDay * 365;
+        let mbPerYear = bytesToGb(bytesPerYear).toFixed(2);
+        document.getElementById("usersPerYear").innerHTML = mbPerYear + " GB per year";
+    }
+</script>
+</body>
+</html>
